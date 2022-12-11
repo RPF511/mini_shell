@@ -39,6 +39,8 @@ int input_handler(char commands[COMMAND_QUEUE_SIZE][BUFSIZE], int * cmd_idx){
                 }
                 break;
             }
+            isesc = 0;
+            isarrow = 0;
             continue;
         }
         if(key == ASCII_BACKSPACE){

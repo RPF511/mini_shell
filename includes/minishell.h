@@ -6,9 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "setting.h"
 #include "filecontroller.h"
+#include "builtin.h"
+#include "parser.h"
 
 #define ANSI_COLOR_GREEN    "\x1b[32m"
 #define ANSI_COLOR_BLUE     "\x1b[34m"

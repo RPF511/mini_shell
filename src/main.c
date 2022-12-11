@@ -71,13 +71,18 @@ void print_prompt_msg(char * uname, char *hname){
     write_on_fd(STDOUT_FILENO,ANSI_BOLD);
     write_on_fd(STDOUT_FILENO,ANSI_COLOR_BLUE);
     // handle error and exit
-    if(getcwd(cwd_buffer,BUFSIZE) == NULL)return;
-    if(strncmp(cwd_buffer,"/home",5)){
-        write_on_fd(STDOUT_FILENO,cwd_buffer);
-    }else{
-        write_on_fd(STDOUT_FILENO,"~");
-        write_on_fd(STDOUT_FILENO,cwd_buffer+6+strlen(uname));
+    if(getcwd(cwd_buffer,BUFSIZE) == NULL){
+        perror(strerror(errno));
     }
+    int isuserdir = 0;
+    if(!strncmp(cwd_buffer,"/home",5)){
+        if(cwd_buffer[5]!=0 && !strncmp(cwd_buffer+6,uname,strlen(uname))){
+            isuserdir = 1;
+            cwd_buffer[strlen(uname)+5] = '~';
+            write_on_fd(STDOUT_FILENO,cwd_buffer+5+strlen(uname));
+        }
+    }
+    if(!isuserdir) write_on_fd(STDOUT_FILENO,cwd_buffer);
     write_on_fd(STDOUT_FILENO,ANSI_COLOR_RESET);
     write_on_fd(STDOUT_FILENO,ANSI_OFF);
     write_on_fd(STDOUT_FILENO,"$ ");
