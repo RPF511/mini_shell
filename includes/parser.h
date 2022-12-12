@@ -5,4 +5,11 @@
 
 #include "minishell.h"
 
+// #include "command.h"
+
+
+void parse_token(struct command_line * commandline);
+void commandline_space(int index, struct command_line * commandline);
+
+
 #endif

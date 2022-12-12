@@ -1,15 +1,103 @@
-// #include "parser.h"
+#include "parser.h"
 
-// void parser(char result[COMMAND_QUEUE_SIZE][BUFSIZE], const char * command){
-//     char temp[BUFSIZE];
-//     int temp_idx = 0;
-//     int result_idx = 0;
-//     int iscontinue = 0;
-//     for(int i = 0;i<strlen(command);i++){
-//         if(iscontinue){
-//             iscontinue = 0;
-//             continue;
-//             }
-//         if(command[i] == '&' || command[i] == ';' || command[i] == '|' || command[i] == '(' || command[i] == ')' || command[i] == ')' ||)
-//     }
+void parse_token(struct command_line * commandline){
+    int isspace = 1;
+    int isdup2 = 0;
+    for(int i = 0;i < commandline -> cmd_line_size ; i++){
+        char character = commandline->cmd_line[i];
+        #ifdef ISDEV
+        printf("character %c i %d size %d isspace %d isdup2 %d \n",commandline->cmd_line[i],i,commandline -> cmd_line_size,isspace, isdup2);
+        #endif
+        if(character == ' '){
+            #ifdef ISDEV
+            printf("space\n");
+            #endif
+            isdup2 = 0;
+            if(isspace){
+                for(int j = i ; j < commandline -> cmd_line_size -1 ; j++){
+                    commandline->cmd_line[j] = commandline->cmd_line[j+1];
+                }
+                commandline->cmd_line[--(commandline->cmd_line_size)] = 0;
+            }
+            else{
+                isspace = 1;
+                commandline->cmd_line[i] = 0;
+            }
+            continue;
+        }
+        if(character == '>' || character == '<' || character == '2'){
+            #ifdef ISDEV
+            printf("case b\n");
+            #endif
+            if(!isdup2){
+                isdup2=1;
+                if(!isspace){
+                    commandline_space(i,commandline);
+                    i++;
+                }
+                isspace = 0;
+            }
+            else{
+                isdup2 = 0;
+                commandline_space(i+1,commandline);
+                isspace =1;
+                i++;
+            }
+            
+            continue;
+        }
+        if(character == '&' || character == ';' || character == '|' || character == '(' || character == ')' || character == ')' ){
+            #ifdef ISDEV
+            printf("case a\n");
+            #endif
+            if((!isspace) && (!isdup2)){
+                commandline_space(i,commandline);
+                i++;
+            }
+            isdup2 = 0;
+            isspace =1;
+            commandline_space(i+1,commandline);
+            i++;
+            continue;
+        }
+        isspace = 0;
+        if(isdup2){
+            isdup2 = 0;
+            commandline_space(i,commandline);
+            i++;
+        }
+    }
+    commandline->cmd_end = commandline->cmd_line_size;
+    #ifdef ISDEV
+    printf("parse done \n");
+    #endif
+}
+
+//space from front of index
+void commandline_space(int index, struct command_line * commandline){
+    for(int j = commandline->cmd_line_size ; j > index ; j--){
+        commandline->cmd_line[j] = commandline->cmd_line[j-1];
+    }
+    commandline->cmd_line[index] = 0;
+    commandline->cmd_line[++(commandline->cmd_line_size)] = 0;
+}
+
+
+// typedef struct cmd_line{
+//     int cmd_start;
+//     int cmd_end;
+//     int cmd_line_size;
+
+//     int res_idx;
+
+//     char cmd_line[BUFSIZE];
+    
+//     char * result[BUFSIZE];
+// } cmd_line;
+
+//
+// int get_next_command(int index, cmd_line * commandline){
+//     if()
 // }
+
+

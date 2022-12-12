@@ -7,11 +7,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdlib.h>
 
 #include "setting.h"
 #include "filecontroller.h"
 #include "builtin.h"
 #include "parser.h"
+#include "command.h"
 
 #define ANSI_COLOR_GREEN    "\x1b[32m"
 #define ANSI_COLOR_BLUE     "\x1b[34m"
@@ -19,14 +21,18 @@
 #define ANSI_BOLD           "\e[1m"
 #define ANSI_OFF            "\e[m"
 
-#define BUFSIZE 2048
+
 #define COMMAND_QUEUE_SIZE 100
 #define HOSTNAMESIZE 10
+
+
 
 
 void print_stat(void);
 void print_prompt_msg(char * uname, char *hname);
 void shell_mainloop(void);
+void init_command_line(struct command_line * commandline, const char * str);
+void print_command_line(struct command_line * commandline);
 
 
 #endif

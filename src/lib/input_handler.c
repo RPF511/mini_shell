@@ -2,11 +2,12 @@
 
 // return num : index of ex idx(for arrow) | -1 : input nothing | 
 int input_handler(char commands[COMMAND_QUEUE_SIZE][BUFSIZE], int * cmd_idx){
-    int result = 0;
+    int result = -1;
     int ch_idx = strlen(commands[*cmd_idx]);
     int isesc = 0;
     int isarrow = 0;
     while(1){
+        // printf("\n%s %d\n",commands[*cmd_idx],ch_idx);
         unsigned char key =getch();
         // #ifdef ISDEV
         // printf("%c %d\n",key,key);
@@ -39,14 +40,39 @@ int input_handler(char commands[COMMAND_QUEUE_SIZE][BUFSIZE], int * cmd_idx){
                 }
                 break;
             }
+            if(key == ASCII_LEFT_D){
+                if(--ch_idx < 0)ch_idx = 0;
+                else write_on_fd(STDOUT_FILENO,"\b");
+            }
+            if(key == ASCII_RIGHT_C){
+                if(++ch_idx > strlen(commands[*cmd_idx]))ch_idx = strlen(commands[*cmd_idx]);
+                else{
+                    putchar(commands[*cmd_idx][ch_idx-1]);
+                }
+            }
             isesc = 0;
             isarrow = 0;
             continue;
         }
         if(key == ASCII_BACKSPACE){
-            if(--ch_idx < 0)ch_idx = 0;
-            else write_on_fd(STDOUT_FILENO,"\b \b");
-            commands[*cmd_idx][ch_idx] = 0;
+            if(commands[*cmd_idx][ch_idx] == 0){
+                if(--ch_idx < 0)ch_idx = 0;
+                write_on_fd(STDOUT_FILENO,"\b \b");
+                commands[*cmd_idx][ch_idx] = 0;
+            }else{
+                if(--ch_idx < 0)ch_idx = 0;
+                for(int i = ch_idx; i < strlen(commands[*cmd_idx]); i++){
+                    commands[*cmd_idx][i] = commands[*cmd_idx][i+1];
+                }
+                write_on_fd(STDOUT_FILENO,"\b");
+                write_on_fd(STDOUT_FILENO,commands[*cmd_idx]+ch_idx);
+                write_on_fd(STDOUT_FILENO," ");
+                for(int i = strlen(commands[*cmd_idx])+1; i > ch_idx; i--){
+                    write_on_fd(STDOUT_FILENO,"\b");
+                }
+            }
+                
+            
             continue;
         }
         if(key == ASCII_CTRL_C){
@@ -55,15 +81,27 @@ int input_handler(char commands[COMMAND_QUEUE_SIZE][BUFSIZE], int * cmd_idx){
             break;
         }
         if(key == ASCII_ENTER){
-            commands[*cmd_idx][ch_idx] = 0;
-            result = 1;
+            result = ch_idx;
             break;
         }
         isesc = 0;
         isarrow = 0;
+        // need to perror(out of index)
         if(ch_idx+1 < BUFSIZE){
-            commands[*cmd_idx][ch_idx++] = key;
-            putchar(key);
+            if(commands[*cmd_idx][ch_idx] == 0){
+                commands[*cmd_idx][ch_idx++] = key;
+                commands[*cmd_idx][ch_idx] = 0;
+                putchar(key);
+            }else{
+                for(int i = strlen(commands[*cmd_idx])+1; i > ch_idx; i--){
+                    commands[*cmd_idx][i] = commands[*cmd_idx][i-1];
+                }
+                commands[*cmd_idx][ch_idx] = key;
+                write_on_fd(STDOUT_FILENO,commands[*cmd_idx]+ch_idx++);
+                for(int i = strlen(commands[*cmd_idx]); i > ch_idx; i--){
+                    write_on_fd(STDOUT_FILENO,"\b");
+                }
+            }
         }
     }
     return result;

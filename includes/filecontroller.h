@@ -9,8 +9,7 @@
 #include <termios.h>
 
 #include "minishell.h"
-#define BUFSIZE 2048
-#define COMMAND_QUEUE_SIZE 100
+
 
 
 #define ASCII_ESC 27
