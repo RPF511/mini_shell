@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "filecontroller.h": "c",
-        "unistd.h": "c"
-    }
-}
