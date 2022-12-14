@@ -29,7 +29,7 @@ void shell_mainloop(){
     while(1){
         if(isrefresh) print_prompt_msg(username,hostname);
         write_on_fd(STDOUT_FILENO,commands[cmd_idx]);
-        if(input_handler(commands, &cmd_idx) == -1){
+        if(input_handler(commands, &cmd_idx, cmd_rear) == -1){
             isrefresh = 0;
             if(cmd_idx == cmd_front-1) cmd_idx = cmd_front;
             if(cmd_idx == cmd_rear) cmd_idx = cmd_rear-1;
@@ -37,24 +37,27 @@ void shell_mainloop(){
             isrefresh = 1;
             write_on_fd(STDOUT_FILENO,"\n");
             // printf("c : %s\n",commands[cmd_idx]);
-            strcpy(current_command,commands[cmd_idx]);
+            if(strlen(commands[cmd_idx])){
+                strcpy(current_command,commands[cmd_idx]);
 
-            //command queue adjust
-            if(cmd_idx != cmd_rear-1){
-                strcpy(commands[cmd_rear-1],current_command);
-                cmd_idx = cmd_rear;
-            }else{
-                cmd_idx++;
+                //command queue adjust
+                if(cmd_idx != cmd_rear-1){
+                    strcpy(commands[cmd_rear-1],current_command);
+                    cmd_idx = cmd_rear;
+                }else{
+                    cmd_idx++;
+                }
+                if(++cmd_rear == COMMAND_QUEUE_SIZE) cmd_rear = 0;
+                if(cmd_rear == cmd_front) cmd_front++;
+                // #ifdef ISDEV
+                // printf("command : %s / fr : %d / re :%d / cur : %d\n",current_command,cmd_front,cmd_rear,cmd_idx);
+                // #endif
+
+                init_command_line(commandline, current_command);
+                parse_token(commandline);
+                // print_command_line(commandline);
+                command_handler(commandline);
             }
-            if(++cmd_rear == COMMAND_QUEUE_SIZE) cmd_rear = 0;
-            if(cmd_rear == cmd_front) cmd_front++;
-            #ifdef ISDEV
-            printf("command : %s / fr : %d / re :%d / cur : %d\n",current_command,cmd_front,cmd_rear,cmd_idx);
-            #endif
-
-            init_command_line(commandline, current_command);
-            parse_token(commandline);
-            print_command_line(commandline);
         }
         
     }
@@ -62,17 +65,7 @@ void shell_mainloop(){
     free(commandline);
 }
 
-void init_command_line(command_line * commandline, const char * str){
-    commandline->cmd_line_size = strlen(str);
-    commandline->cmd_start=0;
-    commandline->cmd_end=commandline->cmd_line_size;
-    strcpy(commandline->cmd_line,str);
-    commandline->res_idx=-1;
-    commandline->result[0] = (char *)0;
-    #ifdef ISDEV
-    printf("command init done : %s |size : %d\n",commandline->cmd_line,commandline->cmd_line_size);
-    #endif
-}
+
 
 void print_stat(){
     #ifdef ISDEV
@@ -109,12 +102,3 @@ void print_prompt_msg(char * uname, char *hname){
 }
 
 
-void print_command_line(command_line * commandline){
-    char tempstr[BUFSIZE];
-    for(int i= 0; i< commandline->cmd_line_size;){
-        strcpy(tempstr,commandline->cmd_line+i);
-        write_on_fd(STDOUT_FILENO,tempstr);
-        write_on_fd(STDOUT_FILENO,"\n");
-        i+=strlen(tempstr)+1;
-    }
-}

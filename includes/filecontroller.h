@@ -33,7 +33,7 @@
 
 
 ssize_t write_on_fd(int fd, char * data);
-int input_handler(char commands[COMMAND_QUEUE_SIZE][BUFSIZE], int * cmd_idx);
+int input_handler(char commands[COMMAND_QUEUE_SIZE][BUFSIZE], int * cmd_idx, int cmd_rear);
 int getch(void);
 int getche(void);
 

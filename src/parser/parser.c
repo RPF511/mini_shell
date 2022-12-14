@@ -5,13 +5,13 @@ void parse_token(struct command_line * commandline){
     int isdup2 = 0;
     for(int i = 0;i < commandline -> cmd_line_size ; i++){
         char character = commandline->cmd_line[i];
-        #ifdef ISDEV
-        printf("character %c i %d size %d isspace %d isdup2 %d \n",commandline->cmd_line[i],i,commandline -> cmd_line_size,isspace, isdup2);
-        #endif
+        // #ifdef ISDEV
+        // printf("character %c i %d size %d isspace %d isdup2 %d \n",commandline->cmd_line[i],i,commandline -> cmd_line_size,isspace, isdup2);
+        // #endif
         if(character == ' '){
-            #ifdef ISDEV
-            printf("space\n");
-            #endif
+            // #ifdef ISDEV
+            // printf("space\n");
+            // #endif
             isdup2 = 0;
             if(isspace){
                 for(int j = i ; j < commandline -> cmd_line_size -1 ; j++){
@@ -26,9 +26,9 @@ void parse_token(struct command_line * commandline){
             continue;
         }
         if(character == '>' || character == '<' || character == '2'){
-            #ifdef ISDEV
-            printf("case b\n");
-            #endif
+            // #ifdef ISDEV
+            // printf("case b\n");
+            // #endif
             if(!isdup2){
                 isdup2=1;
                 if(!isspace){
@@ -47,9 +47,9 @@ void parse_token(struct command_line * commandline){
             continue;
         }
         if(character == '&' || character == ';' || character == '|' || character == '(' || character == ')' || character == ')' ){
-            #ifdef ISDEV
-            printf("case a\n");
-            #endif
+            // #ifdef ISDEV
+            // printf("case a\n");
+            // #endif
             if((!isspace) && (!isdup2)){
                 commandline_space(i,commandline);
                 i++;
@@ -67,10 +67,10 @@ void parse_token(struct command_line * commandline){
             i++;
         }
     }
-    commandline->cmd_end = commandline->cmd_line_size;
-    #ifdef ISDEV
-    printf("parse done \n");
-    #endif
+    // commandline->cmd_end = commandline->cmd_line_size;
+    // #ifdef ISDEV
+    // printf("parse done \n");
+    // #endif
 }
 
 //space from front of index

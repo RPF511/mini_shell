@@ -11,6 +11,13 @@ typedef struct command_line{
 
     int res_idx;
 
+    int next_start;
+    int bracket;
+    int background;
+    int pipe_redir;
+    int cmd_set_end;
+
+
     char cmd_line[BUFSIZE];
     
     char * result[BUFSIZE];

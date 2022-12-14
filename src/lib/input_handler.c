@@ -1,7 +1,7 @@
 #include "filecontroller.h"
 
 // return num : index of ex idx(for arrow) | -1 : input nothing | 
-int input_handler(char commands[COMMAND_QUEUE_SIZE][BUFSIZE], int * cmd_idx){
+int input_handler(char commands[COMMAND_QUEUE_SIZE][BUFSIZE], int * cmd_idx, int cmd_rear){
     int result = -1;
     int ch_idx = strlen(commands[*cmd_idx]);
     int isesc = 0;
@@ -26,15 +26,22 @@ int input_handler(char commands[COMMAND_QUEUE_SIZE][BUFSIZE], int * cmd_idx){
             // printf("arrow %d\n",key);
             // #endif
             int isupdown = 0;
+            if(*cmd_idx>0)
             if(key == ASCII_UP_A){
-                (*cmd_idx)--;
-                isupdown = 1;
+                if(*cmd_idx>0){
+                    (*cmd_idx)--;
+                    isupdown = 1;
+                }
             }
             if(key == ASCII_DOWN_B){
-                (*cmd_idx)++;
-                isupdown = 1;
+                if(*cmd_idx < cmd_rear-1){
+                    (*cmd_idx)++;
+                    isupdown = 1;
+                }
             }
             if(isupdown){
+                // printf("\n%ld : %s\n",strlen(commands[*cmd_idx]),commands[*cmd_idx]);
+                for(; ch_idx < strlen(commands[*cmd_idx]);ch_idx++) write_on_fd(STDOUT_FILENO," ");
                 for(int i = 0; i < ch_idx; i++){
                     write_on_fd(STDOUT_FILENO,"\b \b");
                 }
@@ -55,23 +62,24 @@ int input_handler(char commands[COMMAND_QUEUE_SIZE][BUFSIZE], int * cmd_idx){
             continue;
         }
         if(key == ASCII_BACKSPACE){
-            if(commands[*cmd_idx][ch_idx] == 0){
-                if(--ch_idx < 0)ch_idx = 0;
-                write_on_fd(STDOUT_FILENO,"\b \b");
-                commands[*cmd_idx][ch_idx] = 0;
-            }else{
-                if(--ch_idx < 0)ch_idx = 0;
-                for(int i = ch_idx; i < strlen(commands[*cmd_idx]); i++){
-                    commands[*cmd_idx][i] = commands[*cmd_idx][i+1];
-                }
-                write_on_fd(STDOUT_FILENO,"\b");
-                write_on_fd(STDOUT_FILENO,commands[*cmd_idx]+ch_idx);
-                write_on_fd(STDOUT_FILENO," ");
-                for(int i = strlen(commands[*cmd_idx])+1; i > ch_idx; i--){
+            if(ch_idx>0){
+                if(commands[*cmd_idx][ch_idx] == 0){
+                    if(--ch_idx < 0)ch_idx = 0;
+                    write_on_fd(STDOUT_FILENO,"\b \b");
+                    commands[*cmd_idx][ch_idx] = 0;
+                }else{
+                    if(--ch_idx < 0)ch_idx = 0;
+                    for(int i = ch_idx; i < strlen(commands[*cmd_idx]); i++){
+                        commands[*cmd_idx][i] = commands[*cmd_idx][i+1];
+                    }
                     write_on_fd(STDOUT_FILENO,"\b");
+                    write_on_fd(STDOUT_FILENO,commands[*cmd_idx]+ch_idx);
+                    write_on_fd(STDOUT_FILENO," ");
+                    for(int i = strlen(commands[*cmd_idx])+1; i > ch_idx; i--){
+                        write_on_fd(STDOUT_FILENO,"\b");
+                    }
                 }
             }
-                
             
             continue;
         }
