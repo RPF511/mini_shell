@@ -13,6 +13,11 @@ int input_handler(char commands[COMMAND_QUEUE_SIZE][BUFSIZE], int * cmd_idx, int
         // printf("%c %d\n",key,key);
         // printf("%d here\n",key);
         // #endif
+
+        if(key == ASCII_TAB){
+            // tab not implemented
+            continue;
+        }
         if(key == ASCII_ESC){
             isesc = 1;
             continue;

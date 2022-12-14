@@ -30,6 +30,7 @@
 #define ASCII_CTRL_D 4
 #define ASCII_CTRL_C 3
 #define ASCII_ENTER 10
+#define ASCII_TAB 9
 
 
 ssize_t write_on_fd(int fd, char * data);
