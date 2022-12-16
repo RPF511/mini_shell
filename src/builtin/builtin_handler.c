@@ -11,6 +11,11 @@ int builtin_handler(const char *command,char *const argv[]){
         cd(command,argv);
         return 1;
     }
+    if(strcmp(command,"history")==0){
+        history(command,argv);
+        return 1;
+    }
+
 
 
     return -1;

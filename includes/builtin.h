@@ -10,5 +10,6 @@
 
 int builtin_handler(const char *command,char *const argv[]);
 int cd(const char *command,char *const argv[]);
+int history(const char *command,char *const argv[]);
 
 #endif

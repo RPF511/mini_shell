@@ -14,6 +14,7 @@
 #include "builtin.h"
 #include "parser.h"
 #include "command.h"
+#include "processhandler.h"
 
 #define ANSI_COLOR_GREEN    "\x1b[32m"
 #define ANSI_COLOR_BLUE     "\x1b[34m"

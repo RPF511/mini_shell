@@ -26,3 +26,14 @@ typedef struct command_line{
     
     char * result[BUFSIZE];
 } command_line;
+
+typedef struct process_handler{
+    pid_t pid_list[BUFSIZE];
+    int state;
+    int pid_num;
+}process_handler;
+
+int stdout_backup;
+int stdin_backup;
+int stderr_backup;
+char commands[COMMAND_QUEUE_SIZE][BUFSIZE];

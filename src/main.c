@@ -3,10 +3,16 @@
 char cwd_buffer[BUFSIZE];
 
 
+command_line * commandline;
+process_handler * p_handler;
+
 
 
 int main(int argc, char * argv[], char *envp[]){
     print_stat();
+    stdout_backup = dup(STDOUT_FILENO);
+    stdin_backup = dup(STDIN_FILENO);
+    stderr_backup = dup(STDERR_FILENO);
 
     shell_mainloop();
 
@@ -16,14 +22,15 @@ int main(int argc, char * argv[], char *envp[]){
 void shell_mainloop(){
     char * username = getenv("USERNAME");
     char hostname[HOSTNAMESIZE];
-    char commands[COMMAND_QUEUE_SIZE][BUFSIZE];
     char current_command[BUFSIZE];
     int cmd_idx = 0;
     int cmd_front = 0;
     int cmd_rear = 1;
     memset(commands,0,COMMAND_QUEUE_SIZE*BUFSIZE);
     int isrefresh = 1;
-    command_line * commandline = (command_line *)malloc(sizeof(command_line));
+    commandline = (command_line *)malloc(sizeof(command_line));
+    p_handler = (process_handler *)malloc(sizeof(process_handler));
+    init_p_handler(p_handler);
 
     gethostname(hostname, HOSTNAMESIZE-1);
     while(1){
@@ -37,8 +44,17 @@ void shell_mainloop(){
             isrefresh = 1;
             write_on_fd(STDOUT_FILENO,"\n");
             // printf("c : %s\n",commands[cmd_idx]);
+            // if(current_command[0] == '!'){
+            //     int idx = atoi(commandline->cmd_line + 2);
+            //     if(idx){
+            //         strcpy(current_command,commands[idx]);
+                    
+            //     }
+            // }
             if(strlen(commands[cmd_idx])){
                 strcpy(current_command,commands[cmd_idx]);
+                printf("%s\n",current_command);
+                
 
                 //command queue adjust
                 if(cmd_idx != cmd_rear-1){
@@ -55,9 +71,10 @@ void shell_mainloop(){
 
                 init_command_line(commandline, current_command);
                 parse_token(commandline);
-                // print_command_line(commandline);
-                // next_command_set(commandline);
-                command_handler(commandline);
+                command_handler(commandline,p_handler);
+                
+                
+                backup_std(stdout_backup,stdin_backup,stderr_backup);
             }
         }
         
