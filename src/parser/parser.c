@@ -73,7 +73,7 @@ void parse_token(struct command_line * commandline){
             //     i++;
             // }
         }
-        if(character == '&' || character == ';' || character == '|' || character == '(' || character == ')' || character == ')' ){
+        if(character == '&' || character == ';' || character == '|' || character == '(' || character == ')' || character == ')' || character == '!'){
             // #ifdef ISDEV
             // printf("case a\n");
             // #endif
@@ -85,7 +85,6 @@ void parse_token(struct command_line * commandline){
             isdup2 = 0;
             isspace =1;
             commandline_space(i+1,commandline);
-            printf("here\n");
             i++;
             continue;
         }

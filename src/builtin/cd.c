@@ -12,7 +12,8 @@ int cd(const char *command,char *const argv[]){
     }else{
         strcpy(path,argv[1]);
     }
-    if(chdir(argv[1])==-1){
+    
+    if(chdir(path)==-1){
         write_on_fd(STDERR_FILENO,path);
         write_on_fd(STDERR_FILENO,": ");
         perror(strerror(errno));

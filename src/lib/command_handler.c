@@ -26,6 +26,7 @@
 //     char * result[BUFSIZE];
 // } command_line;
 
+
 void command_handler(struct command_line * commandline){
     int stdout_backup = dup(STDOUT_FILENO);
     int stdin_backup = dup(STDIN_FILENO);
@@ -34,14 +35,19 @@ void command_handler(struct command_line * commandline){
     int temp_output = -1;
     int temp_err = -1;
     pid_t pid = -1;
+    pid_t mypid = -1;
+    int childstate;
     while(commandline->next_start < commandline->cmd_line_size){
         pid = -1;
+        temp_input = -1;
+        temp_output = -1;
+        temp_err = -1;
         next_command_set(commandline);
         print_command_line(commandline);
         print_command_status(commandline);
 
         if(commandline->error_idx != -1){
-            temp_err = open(commandline->cmd_line+ commandline->error_idx,O_WRONLY | O_CREAT | O_TRUNC,666);
+            temp_err = open(commandline->cmd_line+ commandline->error_idx,O_WRONLY | O_CREAT | O_TRUNC,777);
             if(temp_err == -1){
                 perror(strerror(errno));
             }else{
@@ -59,7 +65,7 @@ void command_handler(struct command_line * commandline){
         if(commandline->output_idx != -1){
             // gcc 4.3.2 open arg 2->3
             if(commandline->output_status == 1){
-                temp_output = open(commandline->cmd_line+ commandline->output_idx,O_WRONLY | O_CREAT | O_TRUNC,666);
+                temp_output = open(commandline->cmd_line+ commandline->output_idx,O_WRONLY | O_CREAT | O_TRUNC,777);
             }
             if(commandline->output_status == 2){
                 temp_output = open(commandline->cmd_line+ commandline->output_idx,O_WRONLY|O_APPEND);
@@ -72,29 +78,65 @@ void command_handler(struct command_line * commandline){
             }
         }
 
-        // if(commandline->background != -1){
-        //     pid = fork();
-        //     if(pid < 0){
-        //         perror(strerror(errno));
-        //     }
-        //     if(pid == 0){
-                
-        //     }
-        // }
+        if(commandline->background != -1){
+            pid = fork();
+            if(pid < 0){
+                perror(strerror(errno));
+            }
+            if(pid == 0){
+                mypid = 0;
+                commandline->cmd_line_size = commandline->cmd_end + strlen(commandline->cmd_line+commandline->cmd_end);
+                   //when (bracket)&
+            }
+            else{
+                continue;
+            }
+        }
 
-        builtin_handler(commandline->result[0],commandline->result);
+        if(commandline -> pipe_idx != -1){
+            pid = fork();
+            if(pid < 0){
+                perror(strerror(errno));
+            }
+        }
+
+
+
+        if(commandline->result[0]==NULL) continue;
+
+        if(builtin_handler(commandline->result[0],commandline->result) < 0){
+            pid = fork();
+            if(pid < 0){
+                perror(strerror(errno));
+            }
+            if(pid == 0){
+                mypid = 0;
+                // printf("exec : %s\n",commandline->result[0]);
+                execvp(commandline->result[0],commandline->result);
+                perror(strerror(errno));
+            }
+            else{
+                //todo : handle WCONTINUED or WNOHANG  -> when child error or waiting
+                if(waitpid(pid,&childstate,0)<0){
+                    perror(strerror(errno));
+                }
+            }
+        }
+        
 
         
         // print_command_line(commandline);
         // print_command_status(commandline);
 
         backup_std(stdout_backup,stdin_backup,stderr_backup);
-
-        if(pid == 0 && commandline->background != -1){
-            exit(EXIT_SUCCESS);
-        }
+        if(temp_err) close(temp_err);
+        if(temp_input) close(temp_input);
+        if(temp_output) close(temp_output);
+        
     };
-    
+    if(mypid == 0){
+        exit(EXIT_SUCCESS);
+    }
 
     
         // if(commandline -> bracket != -1){
@@ -118,10 +160,11 @@ void next_command_set(struct command_line * commandline){
     commandline->cmd_start = commandline->next_start;
     int tokensize=0;
     int i = 0;
+    int bopen = 0;
     for(i= commandline->cmd_start ; i< commandline->cmd_line_size;){
         // printf("%s\n",commandline->cmd_line+i);
         tokensize = strlen(commandline->cmd_line+i);
-        if(commandline->bracket == -1){
+        if(!bopen){
             if(!strcmp(commandline->cmd_line+i, ";")){
                 if(commandline->ex_idx != -1) commandline->cmd_end = commandline->ex_idx;
                 commandline->next_start = i+2;
@@ -215,8 +258,10 @@ void next_command_set(struct command_line * commandline){
                 commandline->bracket = i;
                 commandline->cmd_start += tokensize+1;
                 i+=2;
+                bopen = 1;
                 continue;
             }
+            if(commandline->bracket != -1) continue;
         }else{
             if(i > commandline -> cmd_line_size ){
                 perror("bracket not closed");
@@ -224,6 +269,7 @@ void next_command_set(struct command_line * commandline){
             }
             if(!strcmp(commandline->cmd_line+i, ")")){
                 commandline->bracket = i;
+                bopen = 0;
                 if(commandline->ex_idx != -1) commandline->cmd_end = commandline->ex_idx;
                 commandline->next_start = i+2;
                 commandline->ex_idx = -1;
@@ -232,12 +278,10 @@ void next_command_set(struct command_line * commandline){
             }
         }
        
-        printf("%d %d",i,tokensize);
         if(commandline->bracket == -1) commandline->result[(commandline->res_idx)++] = commandline->cmd_line+i;
         commandline->ex_idx = i;
-        commandline->cmd_end = i;
+        // commandline->cmd_end = i;
         i+=tokensize+1;
-        printf("%d %d",i,tokensize);
     }
     if(commandline->bracket == -1) commandline->result[commandline->res_idx] = NULL;
     if(commandline->next_start <= commandline->cmd_start)commandline->next_start = i;

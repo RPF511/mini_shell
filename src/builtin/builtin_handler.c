@@ -9,6 +9,7 @@ int builtin_handler(const char *command,char *const argv[]){
     }
     if(strcmp(command,"cd")==0){
         cd(command,argv);
+        return 1;
     }
 
 
