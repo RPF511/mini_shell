@@ -135,6 +135,15 @@ void command_handler(struct command_line *commandline, struct process_handler *p
                 if (pipe(fd) == -1){
                     perror(strerror(errno));
                 }
+    //             printf("[size %d %d->%d ", commandline->cmd_line_size, commandline->cmd_start, commandline->cmd_end);
+    // printf("next %d ", commandline->next_start);
+    // printf("brac %d ", commandline->bracket);
+    // printf("bg %d ", commandline->background);
+    // printf("pipe %d ", commandline->pipe_idx);
+    // printf("input %d ", commandline->input_idx);
+    // printf("outpot %d ", commandline->output_idx);
+    // printf("err %d " ,commandline->error_idx);
+    // printf("out_stat %d ]\n", commandline->output_status);
 
                 pid_idx = get_pid_var(p_handler);
                 int ppid = fork();
@@ -143,6 +152,29 @@ void command_handler(struct command_line *commandline, struct process_handler *p
                     perror(strerror(errno));
                 }
                 if (ppid == 0){
+                    // printf("ppid chile\n");
+                    // print_command_line(commandline);
+                    //  print_command_status(commandline);
+
+                    close(fd[0]);
+                    dup2(fd[1], STDOUT_FILENO);
+                    commandline->cmd_line_size = commandline->cmd_end + strlen(commandline->cmd_line + commandline->cmd_end);
+
+
+    
+
+                    if (commandline->bracket != -1){
+                        commandline->next_start = commandline->cmd_start;
+                        commandline->result[0] = NULL;
+
+                        continue;
+                    }
+                    
+                }
+                else{
+                    // printf("ppid par\n");
+                    // print_command_line(commandline);
+                    // print_command_status(commandline);
                     close(fd[1]);
                     dup2(fd[0], STDIN_FILENO);
                     if (commandline->next_start < commandline->cmd_line_size)
@@ -150,15 +182,8 @@ void command_handler(struct command_line *commandline, struct process_handler *p
                     mypid = pid_idx;
                     commandline->result[0] = NULL;
                     commandline->next_start = commandline->pipe_idx;
-                }
-                else{
-                    close(fd[0]);
-                    dup2(fd[1], STDOUT_FILENO);
-                    commandline->cmd_line_size = commandline->cmd_end + strlen(commandline->cmd_line + commandline->cmd_end);
-                    if (commandline->bracket != -1){
-                        commandline->next_start = commandline->cmd_start;
-                        commandline->result[0] = NULL;
-                    }
+
+                    
                 }
             }
             else

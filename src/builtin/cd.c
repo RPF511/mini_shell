@@ -8,7 +8,9 @@ int cd(const char *command,char *const argv[]){
         if(getcwd(path,BUFSIZE) == NULL){
             perror(strerror(errno));
         }
-        path[strlen(getenv("USERNAME"))+6] = 0;
+        strcpy(path,"/home/");
+        strcat(path,getenv("USERNAME"));
+        // path[strlen(getenv("USERNAME"))+6] = 0;
     }else{
         strcpy(path,argv[1]);
     }
