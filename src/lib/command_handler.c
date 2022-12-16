@@ -26,173 +26,167 @@
 //     char * result[BUFSIZE];
 // } command_line;
 
-
-void command_handler(struct command_line * commandline,struct process_handler * p_handler){
-    
+void command_handler(struct command_line *commandline, struct process_handler *p_handler)
+{
     int temp_input = -1;
     int temp_output = -1;
     int temp_err = -1;
     pid_t pid_idx = -1;
     pid_t mypid = -1;
-    while(commandline->next_start < commandline->cmd_line_size){
+    while (commandline->next_start < commandline->cmd_line_size){
         temp_input = -1;
         temp_output = -1;
         temp_err = -1;
         next_command_set(commandline);
-        // print_command_line(commandline);
-        // print_command_status(commandline);
+        #ifdef ISDEV
+        print_command_line(commandline);
+        print_command_status(commandline);
+        #endif
+        
 
-        if(commandline -> pipe_idx == -1){
-            if(commandline->error_idx != -1){
-                temp_err = open(commandline->cmd_line+ commandline->error_idx,O_WRONLY | O_CREAT | O_TRUNC,777);
-                if(temp_err == -1){
+        if (commandline->pipe_idx == -1){
+            if (commandline->error_idx != -1){
+                temp_err = open(commandline->cmd_line + commandline->error_idx, O_WRONLY | O_CREAT | O_TRUNC, 777);
+                if (temp_err == -1){
                     perror(strerror(errno));
-                }else{
+                }
+                else{
                     dup2(temp_err, STDERR_FILENO);
                 }
             }
-            if(commandline->input_idx != -1){
-                temp_input = open(commandline->cmd_line+ commandline->input_idx,O_RDONLY);
-                if(temp_input == -1){
+            if (commandline->input_idx != -1){
+                temp_input = open(commandline->cmd_line + commandline->input_idx, O_RDONLY);
+                if (temp_input == -1){
                     perror(strerror(errno));
-                }else{
+                }
+                else{
                     dup2(temp_input, STDIN_FILENO);
                 }
             }
-            if(commandline->output_idx != -1){
+            if (commandline->output_idx != -1){
                 // gcc 4.3.2 open arg 2->3
-                if(commandline->output_status == 1){
-                    temp_output = open(commandline->cmd_line+ commandline->output_idx,O_WRONLY | O_CREAT | O_TRUNC,777);
+                if (commandline->output_status == 1){
+                    temp_output = open(commandline->cmd_line + commandline->output_idx, O_WRONLY | O_CREAT | O_TRUNC, 777);
                 }
-                if(commandline->output_status == 2){
-                    temp_output = open(commandline->cmd_line+ commandline->output_idx,O_WRONLY|O_APPEND);
+                if (commandline->output_status == 2){
+                    temp_output = open(commandline->cmd_line + commandline->output_idx, O_WRONLY | O_APPEND);
                 }
                 // if(commandline->output_status == 3)
-                if(temp_output == -1){
+                if (temp_output == -1){
                     perror(strerror(errno));
                 }else{
                     dup2(temp_output, STDOUT_FILENO);
                 }
             }
-            if(commandline->background != -1){
+            if (commandline->background != -1){
                 pid_idx = get_pid_var(p_handler);
                 p_handler->pid_list[pid_idx] = fork();
-                if(p_handler->pid_list[pid_idx] < 0){
+                if (p_handler->pid_list[pid_idx] < 0){
                     perror(strerror(errno));
                 }
-                if(p_handler->pid_list[pid_idx] == 0){
+                if (p_handler->pid_list[pid_idx] == 0){
                     mypid = pid_idx;
-                    // if(temp_err!=-1){close(stderr_backup); stderr_backup = temp_err;}
-                    // if(temp_output!=-1){close(stdout_backup); stdout_backup = temp_output;}
-                    // if(temp_input!=-1){close(stdin_backup); stdin_backup = temp_input;}
-                    
-                    commandline->cmd_line_size = commandline->cmd_end + strlen(commandline->cmd_line+commandline->cmd_end);
-                    if(commandline->bracket!=-1)commandline->next_start = commandline->cmd_start;
-                    //when (bracket)&
+
+                    commandline->cmd_line_size = commandline->cmd_end + strlen(commandline->cmd_line + commandline->cmd_end);
+                    if (commandline->bracket != -1){
+                        commandline->next_start = commandline->cmd_start;
+                        commandline->bracket = -1;
+                        // when (bracket)&
+                    }
                 }
                 else{
-                    printf("mypid in %d\n",mypid);
+                    commandline->cmd_start = commandline->next_start;
                     continue;
                 }
+
             }
-            if(commandline->bracket != -1){
+
+            if (commandline->bracket != -1){
                 pid_idx = get_pid_var(p_handler);
                 int pid = fork();
                 p_handler->pid_list[pid_idx] = pid;
-                if(pid < 0){
+                if (pid < 0){
                     perror(strerror(errno));
                 }
-                if(pid == 0){
+                if (pid == 0){
                     mypid = pid_idx;
-                    // if(temp_err!=-1){close(stderr_backup); stderr_backup = temp_err;}
-                    // if(temp_output!=-1){close(stdout_backup); stdout_backup = temp_output;}
-                    // if(temp_input!=-1){close(stdin_backup); stdin_backup = temp_input;}
-                    commandline->cmd_line_size = commandline->cmd_end + strlen(commandline->cmd_line+commandline->cmd_end);
+                    commandline->cmd_line_size = commandline->cmd_end + strlen(commandline->cmd_line + commandline->cmd_end);
                     commandline->next_start = commandline->cmd_start;
-                    //when (bracket)&
                 }
                 else{
-                    printf("mypid in %d\n",mypid);
-                    if(waitpid(pid,&(p_handler->state),0)<0){
+                    // printf("mypid in %d\n", mypid);
+                    if (waitpid(pid, &(p_handler->state), 0) < 0)
+                    {
                         perror(strerror(errno));
                     }
                 }
             }
-        }else{
+        }
+        else{
             pid_idx = get_pid_var(p_handler);
             int pid = fork();
             p_handler->pid_list[pid_idx] = pid;
-            if(pid < 0){
+            if (pid < 0){
                 perror(strerror(errno));
             }
-            if(pid == 0){
+            if (pid == 0){
                 mypid = pid_idx;
-                // if(temp_err!=-1){close(stderr_backup); stderr_backup = temp_err;}
-                // if(temp_output!=-1){close(stdout_backup); stdout_backup = temp_output;}
-                // if(temp_input!=-1){close(stdin_backup); stdin_backup = temp_input;}
                 int fd[2];
-                if(pipe(fd) == -1){
+                if (pipe(fd) == -1){
                     perror(strerror(errno));
                 }
-                
+
                 pid_idx = get_pid_var(p_handler);
                 int ppid = fork();
                 p_handler->pid_list[pid_idx] = ppid;
-                if(ppid < 0){
+                if (ppid < 0){
                     perror(strerror(errno));
                 }
-                if(ppid == 0){
+                if (ppid == 0){
                     close(fd[1]);
-                    dup2(fd[0],STDIN_FILENO);
-                    if (commandline->next_start < commandline -> cmd_line_size) commandline->cmd_line_size = commandline->next_start;
+                    dup2(fd[0], STDIN_FILENO);
+                    if (commandline->next_start < commandline->cmd_line_size)
+                        commandline->cmd_line_size = commandline->next_start;
                     mypid = pid_idx;
-                    commandline -> result[0] =NULL;
+                    commandline->result[0] = NULL;
                     commandline->next_start = commandline->pipe_idx;
-
-                
-                }else{
-                    close(fd[0]);
-                    dup2(fd[1],STDOUT_FILENO);
-                    commandline->cmd_line_size = commandline->cmd_end + strlen(commandline->cmd_line+commandline->cmd_end);
-                    if(commandline->bracket!=-1){
-                        commandline->next_start = commandline->cmd_start;
-                        commandline->result[0]=NULL;
-                    }
-                    // print_command_line(commandline);
-                    // print_command_status(commandline);
                 }
-            }else{
-                if(waitpid(pid,&(p_handler->state),0)<0){
+                else{
+                    close(fd[0]);
+                    dup2(fd[1], STDOUT_FILENO);
+                    commandline->cmd_line_size = commandline->cmd_end + strlen(commandline->cmd_line + commandline->cmd_end);
+                    if (commandline->bracket != -1){
+                        commandline->next_start = commandline->cmd_start;
+                        commandline->result[0] = NULL;
+                    }
+                }
+            }
+            else
+            {
+                if (waitpid(pid, &(p_handler->state), 0) < 0)
+                {
                     perror(strerror(errno));
                 }
             }
         }
-        
 
-        
+        if (commandline->result[0] == NULL) continue;
 
-        if(commandline->result[0]==NULL) continue;
-
-        
-            
-        // if(commandline -> bracket != -1){
-        // ...
-        // }
         execute_command(commandline, p_handler, &mypid);
 
-        // if(mypid != -1)backup_std(stdout_backup,stdin_backup,stderr_backup);
-
-        if(temp_output!=-1) close(temp_output);
-        if(temp_err!=-1) close(temp_err);
-        if(temp_input!=-1) close(temp_input);
-        
+        if (temp_output != -1)
+            close(temp_output);
+        if (temp_err != -1)
+            close(temp_err);
+        if (temp_input != -1)
+            close(temp_input);
     };
     // printf("mypid %d\n",mypid);
-    if(mypid != -1){
-        del_pid_var(p_handler,mypid);
+    if (mypid != -1)
+    {
+        del_pid_var(p_handler, mypid);
         exit(EXIT_SUCCESS);
     }
-
 }
 
 void execute_command(struct command_line * commandline, process_handler * p_handler , int * mypid){
@@ -356,9 +350,9 @@ void next_command_set(struct command_line * commandline){
         }
        
         if(commandline->bracket == -1 && commandline -> pipe_idx == -1) commandline->result[(commandline->res_idx)++] = commandline->cmd_line+i;
-        commandline->ex_idx = i;
+        commandline -> ex_idx = i;
         // commandline->cmd_end = i;
-        i+=tokensize+1;
+        i += tokensize+1;
     }
     if(commandline->bracket == -1) commandline->result[commandline->res_idx] = NULL;
     if(commandline->next_start <= commandline->cmd_start)commandline->next_start = i;

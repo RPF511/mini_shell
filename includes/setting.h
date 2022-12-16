@@ -1,5 +1,5 @@
 
-#define ISDEV 1
+// #define ISDEV 1
 
 #define BUFSIZE 2048
 #define COMMAND_QUEUE_SIZE 100

@@ -5,7 +5,7 @@ int history(const char *command,char *const argv[]){
     char temp[BUFSIZE];
     for(int i =0; i<COMMAND_QUEUE_SIZE; i++){
         if(!strlen(commands[i]))break;
-        sprintf(temp,"%d ",i);
+        sprintf(temp,"%d ",i+1);
         // strcat(temp," ");
         strcat(temp,commands[i]);
 

@@ -44,36 +44,41 @@ void shell_mainloop(){
             isrefresh = 1;
             write_on_fd(STDOUT_FILENO,"\n");
             // printf("c : %s\n",commands[cmd_idx]);
-            // if(current_command[0] == '!'){
-            //     int idx = atoi(commandline->cmd_line + 2);
-            //     if(idx){
-            //         strcpy(current_command,commands[idx]);
-                    
-            //     }
-            // }
+            
             if(strlen(commands[cmd_idx])){
                 strcpy(current_command,commands[cmd_idx]);
-                printf("%s\n",current_command);
+                // printf("%s\n",current_command);
                 
 
                 //command queue adjust
-                if(cmd_idx != cmd_rear-1){
-                    strcpy(commands[cmd_rear-1],current_command);
-                    cmd_idx = cmd_rear;
-                }else{
-                    cmd_idx++;
-                }
-                if(++cmd_rear == COMMAND_QUEUE_SIZE) cmd_rear = 0;
-                if(cmd_rear == cmd_front) cmd_front++;
+                insert_command_queue(&cmd_idx,&cmd_front, &cmd_rear,current_command);
+                // if(cmd_idx != cmd_rear-1){
+                //     strcpy(commands[cmd_rear-1],current_command);
+                //     cmd_idx = cmd_rear;
+                // }else{
+                //     cmd_idx++;
+                // }
+                // if(++cmd_rear == COMMAND_QUEUE_SIZE) cmd_rear = 0;
+                // if(cmd_rear == cmd_front) cmd_front++;
                 // #ifdef ISDEV
                 // printf("command : %s / fr : %d / re :%d / cur : %d\n",current_command,cmd_front,cmd_rear,cmd_idx);
                 // #endif
-
+                
                 init_command_line(commandline, current_command);
                 parse_token(commandline);
+                // print_command_line(commandline);
+                if(!strcmp(commandline->cmd_line,"!")){
+                    int idx = atoi(commandline->cmd_line + 2);
+                    if(idx){
+                        strcpy(current_command,commands[idx-1]);
+                        insert_command_queue(&cmd_idx,&cmd_front, &cmd_rear,current_command);
+                        init_command_line(commandline, current_command);
+                        parse_token(commandline);
+                        // print_command_line(commandline);
+                    }
+                }
+
                 command_handler(commandline,p_handler);
-                
-                
                 backup_std(stdout_backup,stdin_backup,stderr_backup);
             }
         }
@@ -83,6 +88,16 @@ void shell_mainloop(){
     free(commandline);
 }
 
+void insert_command_queue(int * cmd_idx,int * cmd_front, int * cmd_rear,char * current_command){
+    if(*cmd_idx != *cmd_rear-1){
+        strcpy(commands[*cmd_rear-1],current_command);
+        *cmd_idx = *cmd_rear;
+    }else{
+        (*cmd_idx)++;
+    }
+    if(++(*cmd_rear) == COMMAND_QUEUE_SIZE) *cmd_rear = 0;
+    if(*cmd_rear == *cmd_front) (*cmd_front)++;
+}
 
 
 void print_stat(){
@@ -100,7 +115,7 @@ void print_prompt_msg(char * uname, char *hname){
     write_on_fd(STDOUT_FILENO,ANSI_COLOR_RESET);
     write_on_fd(STDOUT_FILENO,":");
     write_on_fd(STDOUT_FILENO,ANSI_BOLD);
-    write_on_fd(STDOUT_FILENO,ANSI_COLOR_BLUE);
+    write_on_fd(STDOUT_FILENO,ANSI_COLOR_ELSE);
     // handle error and exit
     if(getcwd(cwd_buffer,BUFSIZE) == NULL){
         perror(strerror(errno));

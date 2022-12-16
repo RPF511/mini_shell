@@ -19,6 +19,7 @@
 #define ANSI_COLOR_GREEN    "\x1b[32m"
 #define ANSI_COLOR_BLUE     "\x1b[34m"
 #define ANSI_COLOR_RESET    "\x1b[0m"
+#define ANSI_COLOR_ELSE "\x1b[35m"
 #define ANSI_BOLD           "\e[1m"
 #define ANSI_OFF            "\e[m"
 
@@ -32,6 +33,7 @@
 void print_stat(void);
 void print_prompt_msg(char * uname, char *hname);
 void shell_mainloop(void);
+void insert_command_queue(int * cmd_idx,int * cmd_front, int * cmd_rear,char * current_command);
 
 
 
