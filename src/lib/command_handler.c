@@ -27,18 +27,72 @@
 // } command_line;
 
 void command_handler(struct command_line * commandline){
+    int stdout_backup = dup(STDOUT_FILENO);
+    int stdin_backup = dup(STDIN_FILENO);
+    int stderr_backup = dup(STDERR_FILENO);
+    int temp_input = -1;
+    int temp_output = -1;
+    int temp_err = -1;
+    pid_t pid = -1;
     while(commandline->next_start < commandline->cmd_line_size){
-        
+        pid = -1;
         next_command_set(commandline);
         print_command_line(commandline);
         print_command_status(commandline);
 
+        if(commandline->error_idx != -1){
+            temp_err = open(commandline->cmd_line+ commandline->error_idx,O_WRONLY | O_CREAT | O_TRUNC,666);
+            if(temp_err == -1){
+                perror(strerror(errno));
+            }else{
+                dup2(temp_err, STDERR_FILENO);
+            }
+        }
+        if(commandline->input_idx != -1){
+            temp_input = open(commandline->cmd_line+ commandline->input_idx,O_RDONLY);
+            if(temp_input == -1){
+                perror(strerror(errno));
+            }else{
+                dup2(temp_input, STDIN_FILENO);
+            }
+        }
+        if(commandline->output_idx != -1){
+            // gcc 4.3.2 open arg 2->3
+            if(commandline->output_status == 1){
+                temp_output = open(commandline->cmd_line+ commandline->output_idx,O_WRONLY | O_CREAT | O_TRUNC,666);
+            }
+            if(commandline->output_status == 2){
+                temp_output = open(commandline->cmd_line+ commandline->output_idx,O_WRONLY|O_APPEND);
+            }
+            // if(commandline->output_status == 3)
+            if(temp_output == -1){
+                perror(strerror(errno));
+            }else{
+                dup2(temp_output, STDOUT_FILENO);
+            }
+        }
+
+        // if(commandline->background != -1){
+        //     pid = fork();
+        //     if(pid < 0){
+        //         perror(strerror(errno));
+        //     }
+        //     if(pid == 0){
+                
+        //     }
+        // }
 
         builtin_handler(commandline->result[0],commandline->result);
 
         
         // print_command_line(commandline);
         // print_command_status(commandline);
+
+        backup_std(stdout_backup,stdin_backup,stderr_backup);
+
+        if(pid == 0 && commandline->background != -1){
+            exit(EXIT_SUCCESS);
+        }
     };
     
 
@@ -51,12 +105,21 @@ void command_handler(struct command_line * commandline){
 
 }
 
+void backup_std(int stdout_backup,int stdin_backup,int stderr_backup){
+
+    dup2(stdout_backup,STDOUT_FILENO);
+    dup2(stdin_backup,STDIN_FILENO);
+    dup2(stderr_backup,STDERR_FILENO);
+}
+
 void next_command_set(struct command_line * commandline){
     clear_command_handler(commandline);
+    
     commandline->cmd_start = commandline->next_start;
     int tokensize=0;
     int i = 0;
     for(i= commandline->cmd_start ; i< commandline->cmd_line_size;){
+        // printf("%s\n",commandline->cmd_line+i);
         tokensize = strlen(commandline->cmd_line+i);
         if(commandline->bracket == -1){
             if(!strcmp(commandline->cmd_line+i, ";")){
@@ -67,75 +130,82 @@ void next_command_set(struct command_line * commandline){
             }
             if(!strcmp(commandline->cmd_line+i, "&")){
                 if(commandline->ex_idx != -1) commandline->cmd_end = commandline->ex_idx;
-                commandline->background = i;
-                commandline->next_start = i+2;
-                break;
-            }
-            if(!strcmp(commandline->cmd_line+i, "|")){
                 if(commandline->pipe_idx == -1 && commandline->output_idx == -1 && commandline->input_idx == -1){
                     if(commandline->ex_idx != -1) commandline->cmd_end = commandline->ex_idx;
+                    commandline->background = i;
                     commandline->next_start = i+2;
-                    if(strlen(commandline->cmd_line+commandline->next_start)) commandline->pipe_idx = i+2;
-                    
                 }
+                i+=2;
                 continue;
             }
             if(!strcmp(commandline->cmd_line+i, ">")){
+                int nextlen = strlen(commandline->cmd_line+i+2);
                 if(commandline->output_idx == -1){
                     if(commandline->ex_idx != -1) commandline->cmd_end = commandline->ex_idx;
-                    commandline->next_start = i+2;
-                    if(strlen(commandline->cmd_line+commandline->next_start)){
-                        commandline->output_idx = commandline->next_start;
+                    if(nextlen){
+                        commandline->output_idx = i+2;
                         commandline->output_status = 1;
+                        commandline->next_start = i+nextlen+3;
+                        i += nextlen +1 ;
                     }
-                    
                 }
+                i+=2;
                 continue;
             }
             if(!strcmp(commandline->cmd_line+i, ">>")){
+                int nextlen = strlen(commandline->cmd_line+i+3);
                 if(commandline->output_idx == -1){
                     if(commandline->ex_idx != -1) commandline->cmd_end = commandline->ex_idx;
-                    commandline->next_start = i+3;
-                    if(strlen(commandline->cmd_line+commandline->next_start)){
-                        commandline->output_idx = commandline->next_start;
+                    if(nextlen){
+                        commandline->output_idx = i+3;
                         commandline->output_status = 2;
+                        commandline->next_start = i+nextlen+4;
+                        i += nextlen +1 ;
                     }
-                    
                 }
+                i+=3;
                 continue;
             }
             if(!strcmp(commandline->cmd_line+i, ">|")){
+                int nextlen = strlen(commandline->cmd_line+i+3);
                 if(commandline->output_idx == -1){
                     if(commandline->ex_idx != -1) commandline->cmd_end = commandline->ex_idx;
                     commandline->next_start = i+3;
-                    if(strlen(commandline->cmd_line+commandline->next_start)){
-                        commandline->output_idx = commandline->next_start;
+                    if(nextlen){
+                        commandline->output_idx = i+3;
                         commandline->output_status = 3;
+                        commandline->next_start = i+nextlen+4;
+                        i += nextlen +1 ;
                     }
                     
                 }
+                i+=3;
                 continue;
             }
             if(!strcmp(commandline->cmd_line+i, "2>")){
+                int nextlen = strlen(commandline->cmd_line+i+3);
                 if(commandline->error_idx == -1){
                     if(commandline->ex_idx != -1) commandline->cmd_end = commandline->ex_idx;
-                    commandline->next_start = i+3;
-                    if(strlen(commandline->cmd_line+commandline->next_start)){
-                        commandline->error_idx = commandline->next_start;
+                    if(nextlen){
+                        commandline->error_idx = i+3;
+                        commandline->next_start = i+nextlen+4;
+                        i += nextlen +1 ;
                     }
-                    
                 }
+                i+=3;
                 continue;
             }
             if(!strcmp(commandline->cmd_line+i, "<")){
+                int nextlen = strlen(commandline->cmd_line+i+2);
                 if(commandline->input_idx == -1){
                     if(commandline->ex_idx != -1) commandline->cmd_end = commandline->ex_idx;
-                    commandline->next_start = i+2;
-                    if(strlen(commandline->cmd_line+commandline->next_start)){
-                        commandline->input_idx = commandline->next_start;
+                    if(nextlen){
+                        commandline->input_idx = i+2;
+                        commandline->next_start = i+nextlen+3;
+                        i += nextlen +1 ;
                     }
-                    
                 }
+                i+=2;
                 continue;
             }
             
@@ -144,26 +214,34 @@ void next_command_set(struct command_line * commandline){
             if(!strcmp(commandline->cmd_line+i, "(")){
                 commandline->bracket = i;
                 commandline->cmd_start += tokensize+1;
+                i+=2;
                 continue;
             }
         }else{
+            if(i > commandline -> cmd_line_size ){
+                perror("bracket not closed");
+                break;
+            }
             if(!strcmp(commandline->cmd_line+i, ")")){
                 commandline->bracket = i;
                 if(commandline->ex_idx != -1) commandline->cmd_end = commandline->ex_idx;
                 commandline->next_start = i+2;
                 commandline->ex_idx = -1;
-                break;
+                i += 2;
+                continue;
             }
         }
        
-        
+        printf("%d %d",i,tokensize);
         if(commandline->bracket == -1) commandline->result[(commandline->res_idx)++] = commandline->cmd_line+i;
         commandline->ex_idx = i;
         commandline->cmd_end = i;
         i+=tokensize+1;
+        printf("%d %d",i,tokensize);
     }
     if(commandline->bracket == -1) commandline->result[commandline->res_idx] = NULL;
-    if(commandline->cmd_start == commandline->next_start)commandline->next_start = i;
+    if(commandline->next_start <= commandline->cmd_start)commandline->next_start = i;
+    if(commandline->cmd_end < commandline->cmd_start)commandline->cmd_end = i;
 }
 
 void clear_command_handler(struct command_line * commandline){
@@ -194,6 +272,7 @@ void init_command_line(command_line * commandline, const char * str){
 }
 
 void print_command_line(command_line * commandline){
+    write_on_fd(STDOUT_FILENO,"\n");
     char tempstr[BUFSIZE];
     write_on_fd(STDOUT_FILENO,"cmd_line : [");
     for(int i= 0; i< commandline->cmd_line_size;){

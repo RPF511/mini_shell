@@ -1,13 +1,22 @@
 #include "parser.h"
 
 void parse_token(struct command_line * commandline){
-    int isspace = 1;
+    int isspace = 1;   // was there space before
     int isdup2 = 0;
     for(int i = 0;i < commandline -> cmd_line_size ; i++){
         char character = commandline->cmd_line[i];
         // #ifdef ISDEV
-        // printf("character %c i %d size %d isspace %d isdup2 %d \n",commandline->cmd_line[i],i,commandline -> cmd_line_size,isspace, isdup2);
+        // printf("[%c] i %d size %d isspace %d isdup2 %d \n",character,i,commandline -> cmd_line_size,isspace, isdup2);
+        // for(int j = 0; j < commandline -> cmd_line_size; j++){
+        //     if(commandline->cmd_line[j] == 0){
+        //         printf(" ");
+        //     }else{
+        //         printf("%c",commandline->cmd_line[j]);
+        //     }
+        // }
+        // printf("\n\n");
         // #endif
+
         if(character == ' '){
             // #ifdef ISDEV
             // printf("space\n");
@@ -18,6 +27,7 @@ void parse_token(struct command_line * commandline){
                     commandline->cmd_line[j] = commandline->cmd_line[j+1];
                 }
                 commandline->cmd_line[--(commandline->cmd_line_size)] = 0;
+                i--;
             }
             else{
                 isspace = 1;
@@ -25,7 +35,7 @@ void parse_token(struct command_line * commandline){
             }
             continue;
         }
-        if(character == '>' || character == '<' || character == '2'){
+        if(character == '>' || character == '<'){
             // #ifdef ISDEV
             // printf("case b\n");
             // #endif
@@ -46,10 +56,28 @@ void parse_token(struct command_line * commandline){
             
             continue;
         }
+        if(character == '2' && commandline->cmd_line[i+1] == '>'){
+            if(!isdup2){
+                isdup2=1;
+                if(!isspace){
+                    commandline_space(i,commandline);
+                    i++;
+                }
+                isspace = 0;
+            }
+            continue;
+            // else{
+            //     isdup2 = 0;
+            //     commandline_space(i+1,commandline);
+            //     isspace =1;
+            //     i++;
+            // }
+        }
         if(character == '&' || character == ';' || character == '|' || character == '(' || character == ')' || character == ')' ){
             // #ifdef ISDEV
             // printf("case a\n");
             // #endif
+            // printf("%c\n",character);
             if((!isspace) && (!isdup2)){
                 commandline_space(i,commandline);
                 i++;
@@ -57,6 +85,7 @@ void parse_token(struct command_line * commandline){
             isdup2 = 0;
             isspace =1;
             commandline_space(i+1,commandline);
+            printf("here\n");
             i++;
             continue;
         }

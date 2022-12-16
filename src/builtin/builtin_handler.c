@@ -11,7 +11,6 @@ int builtin_handler(const char *command,char *const argv[]){
         cd(command,argv);
     }
 
-    printf("here\n");
 
     return -1;
 }
