@@ -56,6 +56,7 @@ void shell_mainloop(){
                 init_command_line(commandline, current_command);
                 parse_token(commandline);
                 // print_command_line(commandline);
+                // next_command_set(commandline);
                 command_handler(commandline);
             }
         }

@@ -31,8 +31,7 @@
 void print_stat(void);
 void print_prompt_msg(char * uname, char *hname);
 void shell_mainloop(void);
-void init_command_line(struct command_line * commandline, const char * str);
-void print_command_line(struct command_line * commandline);
+
 
 
 #endif
